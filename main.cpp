@@ -6,12 +6,6 @@ using namespace std;
 
 int main() 
 {
-    string inputPath;
-
-    cout << "Digite o nome do arquivo (com extensao)." << endl;
-    cin >> inputPath;
-
-    readFile(inputPath);
-
+    menu();
     return 0;
 }

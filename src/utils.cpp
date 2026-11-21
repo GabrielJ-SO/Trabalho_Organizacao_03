@@ -46,11 +46,73 @@ int conversorBinInt(string bin) {
 }
 
 
-void readFile(string path) {
-    
-    AddressQueue* queue = lerArquivo(path);
+Escrita entradaEscrita() {
+    char opcao;
 
-    Cache* cache = criarCache(128, 16, 1, Escrita::WRITE_BACK);
+    do {
+        cout << "Tipo de escrita:\n < 1-Write-back >\n < 2-Write-through >\n < 0-Sair >\n  Escrita: ";
+        cin >> opcao;
+
+        switch (opcao)
+        {
+            case '1':
+                return Escrita::WRITE_BACK;
+            case '2':
+                return Escrita::WRITE_THROUGH;
+        
+            default:
+                cout << "Digite '1' ou '2' para escolher o tipo de escrita.";
+                break;
+        }
+
+    } while (opcao != 0);
+
+    return Escrita::NONE;
+}
+
+bool validarEntrada(int capacidade, int tamanhoBloco, int numeroVias, Escrita politicaEscrita) {
+    if (capacidade < 0 || (tamanhoBloco < 0 || tamanhoBloco < 4) || numeroVias < 0)
+        return false;
+    else if ((capacidade & (capacidade - 1)) != 0 && (tamanhoBloco & (tamanhoBloco - 1)) != 0 && (numeroVias & (numeroVias - 1)) != 0)
+        return false;
+    else if (capacidade < (tamanhoBloco * numeroVias))
+        return false;
+    else if (politicaEscrita == Escrita::NONE)
+        return false;
+    
+
+    return true;
+}
+
+Cache* iniciarCache() {
+    int capacidade, tamanhoBloco, numeroVias;
+    
+    cout << "Capacidade da cache (bytes): ";    
+    cin >> capacidade;
+    cout << "Tamanho do bloco (bytes): ";
+    cin >> tamanhoBloco;
+    cout << "Numero de vias: ";
+    cin >> numeroVias;
+
+    Escrita politicaEscrita = entradaEscrita();
+
+    if (validarEntrada(capacidade, tamanhoBloco, numeroVias, politicaEscrita))
+        return criarCache(capacidade, tamanhoBloco, numeroVias, politicaEscrita);
+    else 
+        return NULL;
+}
+
+bool simularCache() {
+
+    string inputPath;
+
+    cout << "Digite o nome do arquivo (com extensao)." << endl;
+    cin >> inputPath;
+
+    AddressQueue* queue = lerArquivo(inputPath);
+    Cache* cache = iniciarCache();
+
+    if (cache == NULL) return false;
 
     int tamanho = queue->size;
 
@@ -60,11 +122,44 @@ void readFile(string path) {
 
     for(int i = 0; i < cache->numeroConjuntos; i++) {
     cout << "Conjunto " << i;
-        for(int j = 0; j< cache->numeroVias; j++) {
-            cout << " | Via = " << j << ": " << cache->conjuntos[i].vias[j].address << " | rot = " << cache->conjuntos[i].vias[j].rotulo << " | idx = " << i << " | off = " << cache->conjuntos[i].vias[j].offset;
+        for(int j = 0; j < cache->numeroVias; j++) {
+            cout << " | Via = " << j << ": " << cache->conjuntos[i].vias[j].address << " - rot = " << cache->conjuntos[i].vias[j].rotulo << " - idx = " << i << " - off = " << cache->conjuntos[i].vias[j].offset;
         }
         cout << endl;
     }
-    
 
+    return true;
+
+}
+
+void menu() {
+    char opcao;
+    do
+    {
+        cout << "\t+---------------------+" << endl;
+        cout << "\t|         Menu        |" << endl;
+        cout << "\t| < 1.Simular Cache > |" << endl;
+        cout << "\t|     < 0.sair >      |" << endl;
+        cout << "\t+---------------------+" << endl;
+        cout << "Escolha uma opcao: ";
+        cin >> opcao;
+
+        switch (opcao)
+        {
+        case '1':
+            if(simularCache())
+                cout << "Simulacao concluida." << endl;
+            else
+                cout << "Erro ao realizar simulacao" << endl;
+            break;
+        
+        case '0': break;
+        
+        default:
+            cout << "Opcao Invalida.";
+            break;
+        }
+
+    } while (opcao != '0');
+    
 }

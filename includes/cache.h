@@ -4,13 +4,9 @@
 
 typedef enum Escrita {
     WRITE_BACK,
-    WRITE_THROUGH
+    WRITE_THROUGH,
+    NONE
 } Escrita;
-
-/* typedef enum Substituicao {
-    LRU
-
-} Substituicao; */
 
 typedef struct  Via {
     bool valid, dirty;

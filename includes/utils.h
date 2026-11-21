@@ -9,4 +9,4 @@ std::string conversorBinHex(std::string bin, int preencher = 0, bool prefixo = f
 std::string conversorIntHex(int numero, int preencher = 0, bool prefixo = false);
 int conversorBinInt(std::string bin);
 
-void readFile(std::string path);
+void menu();
