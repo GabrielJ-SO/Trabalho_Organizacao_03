@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "cache.h"
+#include <format>
 
 using namespace std;
 
@@ -25,6 +26,21 @@ string conversorHexBin(string hex) {
     return bin;
 }
 
+string conversorBinHex(string bin, int preencher, bool prefixo) {
+    int decimal = conversorBinInt(bin);
+    if (prefixo)
+        return format("{:#0{}X}", decimal, preencher);
+    else
+        return format("{:0{}X}", decimal, preencher);
+}
+
+std::string conversorIntHex(int numero, int preencher, bool prefixo) {
+    if (prefixo)
+        return format("{:#0{}X}", numero, preencher);
+    else
+        return format("{:0{}X}", numero, preencher);
+}
+
 int conversorBinInt(string bin) {
     return stoi(bin, nullptr, 2);
 }
@@ -37,7 +53,6 @@ void readFile(string path) {
     Cache* cache = criarCache(128, 16, 1, Escrita::WRITE_BACK);
 
     int tamanho = queue->size;
-    cout << "tamanho: " << tamanho << endl;
 
     for (int i = 0; i < tamanho; i++)
         inserirCache(cache, dequeue(queue));     
@@ -46,7 +61,7 @@ void readFile(string path) {
     for(int i = 0; i < cache->numeroConjuntos; i++) {
     cout << "Conjunto " << i;
         for(int j = 0; j< cache->numeroVias; j++) {
-            cout << " | Via: " << j << " Address: " << cache->conjuntos[i].vias[j].address;
+            cout << " | Via = " << j << ": " << cache->conjuntos[i].vias[j].address << " | rot = " << cache->conjuntos[i].vias[j].rotulo << " | idx = " << i << " | off = " << cache->conjuntos[i].vias[j].offset;
         }
         cout << endl;
     }

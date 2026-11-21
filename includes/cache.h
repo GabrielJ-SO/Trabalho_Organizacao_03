@@ -13,7 +13,7 @@ typedef enum Escrita {
 } Substituicao; */
 
 typedef struct  Via {
-    bool valid, dirt;
+    bool valid, dirty;
     int timer;
     std::string address;
     std::string tag;
