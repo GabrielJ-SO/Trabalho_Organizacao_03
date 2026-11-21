@@ -25,6 +25,10 @@ string conversorHexBin(string hex) {
     return bin;
 }
 
+int conversorBinInt(string bin) {
+    return stoi(bin, nullptr, 2);
+}
+
 
 void readFile(string path) {
     
@@ -36,21 +40,13 @@ void readFile(string path) {
     cout << "tamanho: " << tamanho << endl;
 
     for (int i = 0; i < tamanho; i++)
-    {
-        /* Node *node = dequeue(queue);
-
-        if (node != NULL)
-            cout << "Endereco: " << node->address << " | Acao: " << node->action << endl;
-        else
-            cout << "NULL" << endl; */
-         
         inserirCache(cache, dequeue(queue));     
-    }
+    
 
     for(int i = 0; i < cache->numeroConjuntos; i++) {
-    cout << "Bloco " << i;
+    cout << "Conjunto " << i;
         for(int j = 0; j< cache->numeroVias; j++) {
-            cout << " | Via: " << j << " Address: " << cache->conjuntos[i].vias[j].bloco;
+            cout << " | Via: " << j << " Address: " << cache->conjuntos[i].vias[j].address;
         }
         cout << endl;
     }

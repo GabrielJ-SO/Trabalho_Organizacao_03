@@ -15,14 +15,15 @@ typedef enum Escrita {
 typedef struct  Via {
     bool valid, dirt;
     int timer;
-    std::string bloco;
+    std::string address;
     std::string tag;
+    std::string rotulo;
+    std::string offset;
 } Via;
 
 
 typedef struct Conjunto {
-    Via* vias;
-
+    std::vector<Via> vias;
 } Conjunto;
 
 typedef struct Cache {
@@ -32,7 +33,7 @@ typedef struct Cache {
     int numeroConjuntos;
     int cacheTimer;
     Escrita escrita;
-    Conjunto* conjuntos;
+    std::vector<Conjunto> conjuntos;
 } Cache;
 
 
