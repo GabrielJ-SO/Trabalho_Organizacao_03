@@ -1,20 +1,20 @@
 #include "address_queue.h"
 
 Node* _createNode(std::string address, Action action) {
-    Node* newNode = (Node*)calloc(1, sizeof(Node));
+    Node* newNode = new Node();
 
     newNode->address = address;
     newNode->action  =  action;
-    newNode->next    =    NULL;
+    newNode->next    = nullptr;
 
     return newNode;
 }
 
 AddressQueue* createQueue() {
-    AddressQueue* queue = (AddressQueue*)calloc(1, sizeof(AddressQueue));
+    AddressQueue* queue = new AddressQueue();
 
-    queue->head = NULL;
-    queue->tail = NULL;
+    queue->head = nullptr;
+    queue->tail = nullptr;
     queue->size =    0;
 
     return queue;
@@ -23,7 +23,7 @@ AddressQueue* createQueue() {
 void enqueue(AddressQueue* queue, std::string address, Action action) {
     Node *node = _createNode(address, action);
 
-    if (queue->head == NULL) {
+    if (queue->head == nullptr) {
         queue->head = node;
         queue->tail = node;
     }else {
@@ -35,25 +35,32 @@ void enqueue(AddressQueue* queue, std::string address, Action action) {
 }
 
 Node* dequeue(AddressQueue* queue) {
-    if (queue->size == 0) return NULL; 
+    if (queue->size == 0) return nullptr; 
     
     Node* node     = queue->head;
-    Node* nodeCopy = _createNode(node->address, node->action);
-
     queue->head = node->next;
 
-    if (queue->head == NULL) {
-        queue->tail = NULL;
+    if (queue->head == nullptr) {
+        queue->tail = nullptr;
     }
+    Node* nodeCopy = _createNode(node->address, node->action);
 
-    freeNode(node);
-    
+    delete(node);
     queue->size--;
 
     return nodeCopy;
 }
 
-void freeNode(Node* node) {
-    node->next = NULL;
-    free(node);
+void freeQueue(AddressQueue*& queue) {
+    if (queue != nullptr) {
+        delete(queue);
+        queue = nullptr;
+    }
+}
+
+void freeNode(Node*& node) {
+    if (node != nullptr) {
+        delete(node);
+        node = nullptr;
+    }
 }

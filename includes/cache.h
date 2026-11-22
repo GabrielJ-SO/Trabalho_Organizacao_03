@@ -25,11 +25,14 @@ struct Estatistica {
     int   numeroAcessos   = 0;
     int   acertos         = 0;
     int   faltas          = 0;
+    int   capacidade      = 0;
     int   blocosLidos     = 0;
     int   escritasMemoria = 0;
     int   descargaFinal   = 0;
     int   compulsorias    = 0;
     int   conflitos       = 0;
+    int   wb              = 0;
+
     float taxaAcertos     = 0;
 
     std::vector<std::string> logAcessos;
@@ -52,7 +55,11 @@ typedef struct Cache {
 } Cache;
 
 
-
 Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escrita);
+void liberarCache(Cache*& cache);
 
 void acessarCache(Cache* cache, Node* no);
+void calcularTaxaAcertos(Cache* cache);
+void descargaFinal(Cache* cache);
+
+void imprimirConteudoCache(Cache* cache);

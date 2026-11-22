@@ -3,7 +3,7 @@
 #include "fstream"
 
 std::string formatadorInst(std::string str);
-Action getAction(std::string linha);
+Action getAction(std::string linha, int &pos);
 
 AddressQueue* lerArquivo(std::string path) {
     std::ifstream arquivo(path);
@@ -16,7 +16,14 @@ AddressQueue* lerArquivo(std::string path) {
     while (std::getline(arquivo, linha))
     {   
         int i = 0;
-        Action action = Action::UNDEFINED;
+        int pos;
+        Action action = getAction(linha, pos);
+
+        if (action != Action::UNDEFINED) 
+            linha.erase(pos, 1);
+        else 
+            continue;
+
         while (i < linha.size())
         {
             if (linha[i] == ' ') {
@@ -25,10 +32,6 @@ AddressQueue* lerArquivo(std::string path) {
             else if (linha[i] == '#') {
                 linha = linha.substr(0, i);
                 break;
-            }
-            else if (getAction(linha) != Action::UNDEFINED) {
-                action = getAction(linha);
-                linha = linha.erase(i, 1);
             }
             else {
                 i++;
@@ -80,13 +83,14 @@ std::string formatadorInst(std::string str) {
     }
 }
 
-Action getAction(std::string linha) {
-    Action action = Action::UNDEFINED;
+Action getAction(std::string linha, int &pos) {
 
-    if (linha[0] == 'R')
-        action = Action::READ;
-    else if (linha[0] == 'W')
-        action = Action::WRITE;
+    pos = linha.find_first_of("RWrw");
 
-    return action;
+    if (linha[pos] == 'R' || linha[pos] == 'r')
+        return Action::READ;
+    else if (linha[pos] == 'W' || linha[pos] == 'w')
+        return Action::WRITE;
+
+    return Action::UNDEFINED;
 }

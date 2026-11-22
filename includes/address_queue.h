@@ -30,4 +30,4 @@ AddressQueue* createQueue();
 void enqueue(AddressQueue* queue, std::string address, Action action);
 Node* dequeue(AddressQueue* queue);
 
-void freeNode(Node* node);
+void freeNode(Node*& node);

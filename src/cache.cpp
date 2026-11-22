@@ -5,7 +5,7 @@
 #include <cmath>
 
 Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escrita) {
-    Cache* cache = (Cache*)calloc(1, sizeof(Cache));
+    Cache* cache = new Cache();
     
     cache->capacidade      = capacidade;
     cache->tamanhoBloco    = tamanhoBloco;
@@ -72,7 +72,7 @@ bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
             vias[i].valid   = true;
 
             char acao = 'R';
-            if (no->action == Action::WRITE && Escrita::WRITE_BACK) {
+            if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_BACK) {
                 vias[i].dirty = 1;
                 acao = 'W';
             }
@@ -83,7 +83,6 @@ bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
             }
 
             cache->estatisticas.numeroAcessos += 1;
-            cache->estatisticas.compulsorias  += 1;
             cache->estatisticas.blocosLidos   += 1;
 
             std::string enderecoHex = conversorBinHex(no->address, 8, true);
@@ -117,9 +116,12 @@ bool substituirPorLRU(Cache *cache, Node* no, int idx) {
     for (int i = 0; i < cache->numeroVias; i++)
         if (vias[lru].lru > vias[i].lru) lru = i;
 
+    std::string wb = "";
     if (vias[lru].dirty && cache->escrita == Escrita::WRITE_BACK) {
         cache->estatisticas.escritasMemoria += 1;
+        cache->estatisticas.wb              += 1;
         vias[lru].dirty = 0;
+        wb = "(writeback)";
     }
     std::string enderecoExpulso = reconstruirEndereco(std::stoi(vias[lru].rotulo, nullptr, 16), idx, 0, cache->bitsTag, cache->bitsIdx, cache->bitsOffset);
 
@@ -148,12 +150,12 @@ bool substituirPorLRU(Cache *cache, Node* no, int idx) {
     std::string log;
     if (conflito(cache->conjuntos[idx].blocosInserido, vias[lru].rotulo)) {
         cache->estatisticas.conflitos += 1;
-        log = std::format("{} {} {} rot={} idx={} off={} FALTA conflito expulsa {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso);
+        log = std::format("{} {} {} rot={} idx={} off={} FALTA conflito expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
     }
     else {
         cache->estatisticas.compulsorias += 1;
         cache->conjuntos[idx].blocosInserido.push_back(vias[lru].rotulo);
-        log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria expulsa {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso);
+        log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
     }
 
     cache->estatisticas.logAcessos.push_back(log);
@@ -179,7 +181,7 @@ bool acerto(Cache* cache, Node* no, int idx) {
         {   
             char acao = 'R';
             if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_BACK) {
-                vias[i].dirty = 1;
+                vias[i].dirty = true;
                 acao = 'W';
             }
                 
@@ -207,6 +209,7 @@ bool acerto(Cache* cache, Node* no, int idx) {
             
     }
 
+    cache->estatisticas.faltas += 1;
     return false;
 }
 
@@ -219,6 +222,49 @@ void acessarCache(Cache* cache, Node* no) {
     if (!acerto(cache, no, idx))
         inserirConjuntoCache(cache, no, idx);
 
-
     freeNode(no);
+}
+
+void calcularTaxaAcertos(Cache* cache) {
+    float acertos = cache->estatisticas.acertos;
+    float acessos  =  cache->estatisticas.numeroAcessos;
+
+    cache->estatisticas.taxaAcertos = (acertos/acessos)*100;
+}
+
+void liberarCache(Cache*& cache) {
+    if (cache != nullptr) {
+        delete(cache);
+        cache = nullptr;
+    }
+}
+
+void descargaFinal(Cache* cache) {
+    if (cache->escrita != Escrita::WRITE_BACK) return;
+
+    std::vector<Conjunto>& conjuntos = cache->conjuntos;
+    for (int i = 0; i < conjuntos.size(); i++) 
+    {
+        for (int j = 0; j < conjuntos[i].vias.size(); j++)
+         {
+            if (conjuntos[i].vias[j].valid && conjuntos[i].vias[j].dirty)
+            {
+                cache->estatisticas.descargaFinal   += 1;
+                cache->estatisticas.escritasMemoria += 1;
+            }
+               
+        }
+    }
+}
+
+void imprimirConteudoCache(Cache* cache){
+    for(int i = 0; i < cache->numeroConjuntos; i++) {
+        std::cout << "idx " << i;
+        for(int j = 0; j < cache->numeroVias; j++) {
+            std::cout << " | Via = " << j << ": " << " rot = " << cache->conjuntos[i].vias[j].rotulo;
+        }
+        std:: cout << " |" << std::endl;
+    }
+
+    std::cout << std::endl;
 }

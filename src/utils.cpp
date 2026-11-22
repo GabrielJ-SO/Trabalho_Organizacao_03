@@ -110,6 +110,36 @@ Cache* iniciarCache() {
         return NULL;
 }
 
+void gerarEstatisticas(Cache* cache) {
+    cout << endl;
+
+    cout << " CONFIGURACAO   capacidade=" << cache->capacidade << " B " << " bloco=" << cache->tamanhoBloco << " B " << " vias=" << cache->numeroVias << " conjuntos=" << cache->numeroConjuntos << " escrita=" << ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT") << endl;
+    cout << " CAMPOS         rotulo=" << cache->bitsTag << " bits " << "  indice=" << cache->bitsIdx << " bits " << "  offset=" << cache->bitsOffset << " bits " << endl;
+    
+    cout << endl;
+    for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++)
+        cout << cache->estatisticas.logAcessos[i] << endl;
+    
+    calcularTaxaAcertos(cache);
+    descargaFinal(cache);
+
+    cout << endl << endl;
+    cout << "acessos ............. " << cache->estatisticas.numeroAcessos << endl;
+    cout << "acertos ............. " << cache->estatisticas.acertos << endl;
+    cout << "faltas .............. " << cache->estatisticas.faltas << " (compulsorias " << cache->estatisticas.compulsorias << ", conflito " << cache->estatisticas.conflitos << ", capacidade " << cache->estatisticas.capacidade << ")" << endl;
+    cout << "taxa de acerto ...... " << cache->estatisticas.taxaAcertos << "%" << endl;
+    cout << "blocos lidos da mem.  " << cache->estatisticas.blocosLidos << " (" << (cache->estatisticas.blocosLidos * cache->tamanhoBloco) << " B)" << endl;
+
+    int bytesEscrito = ((cache->escrita == Escrita::WRITE_BACK) ?
+        cache->estatisticas.escritasMemoria * cache->tamanhoBloco : cache->estatisticas.escritasMemoria * 4);
+    cout << "escritas na memoria   " << cache->estatisticas.escritasMemoria << " (" << bytesEscrito << " B) ";
+
+    if (cache->escrita == Escrita::WRITE_BACK)
+        cout << "[writebacks " << cache->estatisticas.wb << " + descarga final " << cache->estatisticas.descargaFinal << "] " << endl;
+
+    cout << endl;
+}
+
 bool simularCache() {
 
     string inputPath;
@@ -123,31 +153,13 @@ bool simularCache() {
     if (cache == NULL) return false;
 
     int tamanho = queue->size;
-
     for (int i = 0; i < tamanho; i++)
         acessarCache(cache, dequeue(queue));     
-    
 
-    for(int i = 0; i < cache->numeroConjuntos; i++) {
-        cout << "Conjunto " << i;
-        for(int j = 0; j < cache->numeroVias; j++) {
-            cout << " | Via = " << j << ": " << " rot = " << cache->conjuntos[i].vias[j].rotulo << " - idx = " << i;
-        }
-        cout << endl;
-    }
+    gerarEstatisticas(cache);
 
-    cout << endl << endl;
-
-    cout << " CONFIGURACAO   capacidade=" << cache->capacidade << " B " << " bloco=" << cache->tamanhoBloco << " B " << " vias=" << cache->numeroVias << " conjuntos=" << cache->numeroConjuntos << " escrita=" << ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT") << endl;
-    cout << " CAMPOS         rotulo=" << cache->bitsTag << " bits " << "  indice=" << cache->bitsIdx << " bits " << "  offset=" << cache->bitsOffset << " bits " << endl;
-    cout << endl;
-
-    for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++) {
-        cout << cache->estatisticas.logAcessos[i] << endl;
-    }
-
+    liberarCache(cache);
     return true;
-
 }
 
 void menu() {
