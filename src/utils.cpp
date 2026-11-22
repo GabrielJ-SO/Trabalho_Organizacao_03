@@ -35,10 +35,14 @@ string conversorBinHex(string bin, int preencher, bool prefixo) {
 }
 
 std::string conversorIntHex(int numero, int preencher, bool prefixo) {
-    if (prefixo)
+    if (prefixo) {
+        preencher += 2;
         return format("{:#0{}X}", numero, preencher);
-    else
+    }
+    else {
         return format("{:0{}X}", numero, preencher);
+    }
+        
 }
 
 int conversorBinInt(string bin) {

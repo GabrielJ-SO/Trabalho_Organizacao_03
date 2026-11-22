@@ -30,26 +30,73 @@ std::string getOffset(std::string endereco, int tamanhoBloco) {
     return std::to_string(conversorBinInt(endereco)%tamanhoBloco);
 }
 
-void inserirVia(Cache *cache, Node* no, int conjunto) {
-    std::vector<Via>& vias = cache->conjuntos[conjunto].vias;
+bool conflito(std::vector<std::string> enderecosInserido, std::string endereco) {
+    for (int i = 0; i < enderecosInserido.size(); i++) {
+        if (enderecosInserido[i] == endereco)
+            return true;
+    }
 
-    for (int i = 0; i < cache->numeroVias; i++) {
-        if (vias[i].valid == false) {
+    return false;
+}
 
+bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
+    std::vector<Via>& vias = cache->conjuntos[idx].vias;
+
+    for (int i = 0; i < cache->numeroVias; i++) 
+    {
+        if (vias[i].valid == false) 
+        {
             vias[i].rotulo  = getRotulo(no->address, cache->capacidade);
             vias[i].lru     = cache->cacheTimer;
             vias[i].valid   = true;
-            return;
+
+            char acao = 'R';
+            if (no->action == Action::WRITE && Escrita::WRITE_BACK) {
+                vias[i].dirty = 1;
+                acao = 'W';
+            }
+                
+            if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_THROUGH) {
+                cache->estatisticas.escritasMemoria += 1;
+                acao = 'W';
+            }
+
+            cache->estatisticas.numeroAcessos += 1;
+            cache->estatisticas.compulsorias  += 1;
+
+            std::string enderecoHex = conversorBinHex(no->address, 8, true);
+            std::string offset      = getOffset(no->address, cache->tamanhoBloco);
+            int acesso              = cache->estatisticas.numeroAcessos;
+
+            std::string log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria\n", acesso, acao, enderecoHex, vias[i].rotulo, idx, offset);
+            cache->estatisticas.logAcessos.push_back(log);
+            cache->conjuntos[idx].enderecosInserido.push_back(no->address);
+
+            return true;
         }
     }
 
+    return false;
+}
+
+bool substituirPorLRU(Cache *cache, Node* no, int idx) {
+    std::vector<Via>& vias = cache->conjuntos[idx].vias;
+
     int viaMenosAcessada = 0;
     for (int i = 0; i < cache->numeroVias; i++)
-        if (cache->conjuntos[conjunto].vias[viaMenosAcessada].lru < cache->conjuntos[conjunto].vias[i].lru) viaMenosAcessada = i;
+        if (vias[viaMenosAcessada].lru < vias[i].lru) viaMenosAcessada = i;
     
     vias[viaMenosAcessada].rotulo  = getRotulo(no->address, cache->capacidade);
     vias[viaMenosAcessada].lru     = cache->cacheTimer;
     vias[viaMenosAcessada].valid   = true;
+
+    return false;
+}
+
+void inserirConjuntoCache(Cache *cache, Node* no, int idx) {
+    
+    if (inserirEmViaLivre(cache, no, idx) == false)
+        substituirPorLRU(cache, no, idx);
 
 }
 
@@ -101,7 +148,7 @@ void acessarCache(Cache* cache, Node* no) {
     int idx = (enderecoDecimal/cache->tamanhoBloco) % cache->numeroConjuntos;
 
     if (!acerto(cache, no, idx))
-        inserirVia(cache, no, idx);
+        inserirConjuntoCache(cache, no, idx);
 
     cache->cacheTimer += 1;
 

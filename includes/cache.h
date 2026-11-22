@@ -18,7 +18,7 @@ typedef struct  Via {
 
 typedef struct Conjunto {
     std::vector<Via> vias;
-    std::vector<std::string> tagsRemovida;
+    std::vector<std::string> enderecosInserido;
 } Conjunto;
 
 struct Estatistica {
