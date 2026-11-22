@@ -11,16 +11,14 @@ typedef enum Escrita {
 typedef struct  Via {
     bool        valid;
     bool        dirty;
-    int         timer;
-    std::string address;
-    std::string tag;
+    int         lru;
     std::string rotulo;
-    std::string offset;
 } Via;
 
 
 typedef struct Conjunto {
     std::vector<Via> vias;
+    std::vector<std::string> tagsRemovida;
 } Conjunto;
 
 struct Estatistica {
@@ -33,6 +31,8 @@ struct Estatistica {
     int   compulsorias    = 0;
     int   conflitos       = 0;
     float taxaAcertos     = 0;
+
+    std::vector<std::string> logAcessos;
 };
 
 typedef struct Cache {
@@ -51,4 +51,4 @@ typedef struct Cache {
 
 Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escrita);
 
-void inserirCache(Cache* cache, Node* no);
+void acessarCache(Cache* cache, Node* no);

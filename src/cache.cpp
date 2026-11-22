@@ -1,37 +1,7 @@
 #include "cache.h"
 
 #include "utils.h"
-#include "math.h"
-
-void inserirVia(Cache *cache, Node* no, int conjunto) {
-    std::vector<Via>& vias = cache->conjuntos[conjunto].vias;
-
-    std::string offset = std::to_string(conversorBinInt(no->address)%cache->tamanhoBloco);
-    int rotulo = conversorBinInt(no->address)/cache->capacidade;
-
-    for (int i = 0; i < cache->numeroVias; i++) {
-        if (vias[i].valid == false) {
-
-            vias[i].address = conversorBinHex(no->address, 8, true);
-            vias[i].offset  =                                offset;
-            vias[i].rotulo  =      conversorIntHex(rotulo, 7, true);
-            vias[i].timer   =                     cache->cacheTimer;
-            vias[i].valid   =                                  true;
-            return;
-        }
-    }
-
-    int viaMenosAcessada = 0;
-    for (int i = 0; i < cache->numeroVias; i++)
-        if (cache->conjuntos[conjunto].vias[viaMenosAcessada].timer < cache->conjuntos[conjunto].vias[i].timer) viaMenosAcessada = i;
-    
-    vias[viaMenosAcessada].address = conversorBinHex(no->address, 8, true);
-    vias[viaMenosAcessada].offset  =                                offset;
-    vias[viaMenosAcessada].rotulo  =      conversorIntHex(rotulo, 7, true);
-    vias[viaMenosAcessada].timer   =                     cache->cacheTimer;
-    vias[viaMenosAcessada].valid   =                                  true;
-
-}
+#include <format>
 
 Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escrita) {
     Cache* cache = (Cache*)calloc(1, sizeof(Cache));
@@ -50,13 +20,89 @@ Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escr
     return cache;
 }
 
-void inserirCache(Cache* cache, Node* no) {
+
+std::string getRotulo(std::string endereco, int capacidade) {
+    int rotulo = conversorBinInt(endereco)/capacidade;
+    return conversorIntHex(rotulo, 7, true);
+}
+
+std::string getOffset(std::string endereco, int tamanhoBloco) {
+    return std::to_string(conversorBinInt(endereco)%tamanhoBloco);
+}
+
+void inserirVia(Cache *cache, Node* no, int conjunto) {
+    std::vector<Via>& vias = cache->conjuntos[conjunto].vias;
+
+    for (int i = 0; i < cache->numeroVias; i++) {
+        if (vias[i].valid == false) {
+
+            vias[i].rotulo  = getRotulo(no->address, cache->capacidade);
+            vias[i].lru     = cache->cacheTimer;
+            vias[i].valid   = true;
+            return;
+        }
+    }
+
+    int viaMenosAcessada = 0;
+    for (int i = 0; i < cache->numeroVias; i++)
+        if (cache->conjuntos[conjunto].vias[viaMenosAcessada].lru < cache->conjuntos[conjunto].vias[i].lru) viaMenosAcessada = i;
+    
+    vias[viaMenosAcessada].rotulo  = getRotulo(no->address, cache->capacidade);
+    vias[viaMenosAcessada].lru     = cache->cacheTimer;
+    vias[viaMenosAcessada].valid   = true;
+
+}
+
+bool acerto(Cache* cache, Node* no, int idx) {
+    std::vector<Via>& vias = cache->conjuntos[idx].vias;
+
+    std::string rotulo = getRotulo(no->address, cache->capacidade);
+    
+    for (int i = 0; i < vias.size(); i++) 
+    {
+        if (vias[i].rotulo == rotulo)
+        {   
+            char acao = 'R';
+            if (no->action == Action::WRITE && Escrita::WRITE_BACK) {
+                vias[i].dirty = 1;
+                acao = 'W';
+            }
+                
+
+            if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_THROUGH) {
+                cache->estatisticas.escritasMemoria += 1;
+                acao = 'W';
+            }
+                
+
+            cache->estatisticas.acertos += 1;
+            cache->estatisticas.numeroAcessos += 1;
+            vias[i].lru = cache->cacheTimer;
+
+            
+            std::string enderecoHex = conversorBinHex(no->address, 8, true);
+            std::string offset      = getOffset(no->address, cache->tamanhoBloco);
+        
+            int acesso = cache->estatisticas.numeroAcessos;
+            std::string log = std::format("{} {} {} rot={} idx={} off={} ACERTO\n", acesso, acao, enderecoHex, rotulo, idx, offset);
+            cache->estatisticas.logAcessos.push_back(log);
+
+            return true;
+        }
+            
+    }
+
+    return false;
+}
+
+void acessarCache(Cache* cache, Node* no) {
     int enderecoDecimal = conversorBinInt(no->address);
-    int idx = cache->numeroConjuntos;
 
-    int modulo = (enderecoDecimal/cache->tamanhoBloco) % idx;
+    int idx = (enderecoDecimal/cache->tamanhoBloco) % cache->numeroConjuntos;
 
-    inserirVia(cache, no, modulo);
+    if (!acerto(cache, no, idx))
+        inserirVia(cache, no, idx);
+
     cache->cacheTimer += 1;
 
     freeNode(no);

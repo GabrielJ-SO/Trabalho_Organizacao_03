@@ -117,15 +117,21 @@ bool simularCache() {
     int tamanho = queue->size;
 
     for (int i = 0; i < tamanho; i++)
-        inserirCache(cache, dequeue(queue));     
+        acessarCache(cache, dequeue(queue));     
     
 
     for(int i = 0; i < cache->numeroConjuntos; i++) {
-    cout << "Conjunto " << i;
+        cout << "Conjunto " << i;
         for(int j = 0; j < cache->numeroVias; j++) {
-            cout << " | Via = " << j << ": " << cache->conjuntos[i].vias[j].address << " - rot = " << cache->conjuntos[i].vias[j].rotulo << " - idx = " << i << " - off = " << cache->conjuntos[i].vias[j].offset;
+            cout << " | Via = " << j << ": " << " rot = " << cache->conjuntos[i].vias[j].rotulo << " - idx = " << i;
         }
         cout << endl;
+    }
+
+    cout << endl << endl;
+
+    for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++) {
+        cout << cache->estatisticas.logAcessos[i] << endl;
     }
 
     return true;
