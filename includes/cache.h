@@ -18,7 +18,7 @@ typedef struct  Via {
 
 typedef struct Conjunto {
     std::vector<Via> vias;
-    std::vector<std::string> enderecosInserido;
+    std::vector<std::string> blocosInserido;
 } Conjunto;
 
 struct Estatistica {
@@ -40,7 +40,11 @@ typedef struct Cache {
     int         tamanhoBloco;
     int         numeroVias;
     int         numeroConjuntos;
-    int         cacheTimer;
+    int         bitsTag;
+    int         bitsIdx;
+    int         bitsOffset;
+
+    int         contadorLRU;
     Escrita     escrita;
     Estatistica estatisticas;
 

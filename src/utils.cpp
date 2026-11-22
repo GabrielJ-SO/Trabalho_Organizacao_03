@@ -28,10 +28,14 @@ string conversorHexBin(string hex) {
 
 string conversorBinHex(string bin, int preencher, bool prefixo) {
     int decimal = conversorBinInt(bin);
-    if (prefixo)
+    if (prefixo) {
+        preencher += 2;
         return format("{:#0{}X}", decimal, preencher);
-    else
+    } 
+    else {
         return format("{:0{}X}", decimal, preencher);
+    }
+        
 }
 
 std::string conversorIntHex(int numero, int preencher, bool prefixo) {
@@ -133,6 +137,10 @@ bool simularCache() {
     }
 
     cout << endl << endl;
+
+    cout << " CONFIGURACAO   capacidade=" << cache->capacidade << " B " << " bloco=" << cache->tamanhoBloco << " B " << " vias=" << cache->numeroVias << " conjuntos=" << cache->numeroConjuntos << " escrita=" << ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT") << endl;
+    cout << " CAMPOS         rotulo=" << cache->bitsTag << " bits " << "  indice=" << cache->bitsIdx << " bits " << "  offset=" << cache->bitsOffset << " bits " << endl;
+
 
     for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++) {
         cout << cache->estatisticas.logAcessos[i] << endl;
