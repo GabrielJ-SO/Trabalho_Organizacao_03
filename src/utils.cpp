@@ -140,7 +140,7 @@ bool simularCache() {
 
     cout << " CONFIGURACAO   capacidade=" << cache->capacidade << " B " << " bloco=" << cache->tamanhoBloco << " B " << " vias=" << cache->numeroVias << " conjuntos=" << cache->numeroConjuntos << " escrita=" << ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT") << endl;
     cout << " CAMPOS         rotulo=" << cache->bitsTag << " bits " << "  indice=" << cache->bitsIdx << " bits " << "  offset=" << cache->bitsOffset << " bits " << endl;
-
+    cout << endl;
 
     for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++) {
         cout << cache->estatisticas.logAcessos[i] << endl;

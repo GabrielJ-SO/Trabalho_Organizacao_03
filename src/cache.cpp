@@ -26,8 +26,8 @@ Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escr
 }
 
 
-std::string getRotulo(std::string endereco, int capacidade) {
-    int rotulo = conversorBinInt(endereco)/capacidade;
+std::string getRotulo(std::string endereco, int capacidade, int numeroVias) {
+    int rotulo = conversorBinInt(endereco)/(capacidade/numeroVias);
     return conversorIntHex(rotulo, 7, true);
 }
 
@@ -51,7 +51,7 @@ std::string reconstruirEndereco(int tag, int idx, int offset, int bitsTag, int b
     return endereco;
 }
 
-bool conflito(std::vector<std::string> blocosInserido, std::string tag) {
+bool conflito(const std::vector<std::string>& blocosInserido, std::string tag) {
     for (int i = 0; i < blocosInserido.size(); i++) {
         if (blocosInserido[i] == tag)
             return true;
@@ -67,7 +67,7 @@ bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
     {
         if (vias[i].valid == false) 
         {
-            vias[i].rotulo  = getRotulo(no->address, cache->capacidade);
+            vias[i].rotulo  = getRotulo(no->address, cache->capacidade, cache->numeroVias);
             vias[i].lru     = cache->contadorLRU;
             vias[i].valid   = true;
 
@@ -115,7 +115,7 @@ bool substituirPorLRU(Cache *cache, Node* no, int idx) {
 
     int lru = 0;
     for (int i = 0; i < cache->numeroVias; i++)
-        if (vias[lru].lru < vias[i].lru) lru = i;
+        if (vias[lru].lru > vias[i].lru) lru = i;
 
     if (vias[lru].dirty && cache->escrita == Escrita::WRITE_BACK) {
         cache->estatisticas.escritasMemoria += 1;
@@ -123,12 +123,12 @@ bool substituirPorLRU(Cache *cache, Node* no, int idx) {
     }
     std::string enderecoExpulso = reconstruirEndereco(std::stoi(vias[lru].rotulo, nullptr, 16), idx, 0, cache->bitsTag, cache->bitsIdx, cache->bitsOffset);
 
-    vias[lru].rotulo  = getRotulo(no->address, cache->capacidade);
+    vias[lru].rotulo  = getRotulo(no->address, cache->capacidade, cache->numeroVias);
     vias[lru].lru     = cache->contadorLRU;
     vias[lru].valid   = true;
 
     char acao = 'R';
-    if (no->action == Action::WRITE && Escrita::WRITE_BACK) {
+    if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_BACK) {
         vias[lru].dirty = 1;
         acao = 'W';
     }
@@ -171,14 +171,14 @@ void inserirConjuntoCache(Cache *cache, Node* no, int idx) {
 bool acerto(Cache* cache, Node* no, int idx) {
     std::vector<Via>& vias = cache->conjuntos[idx].vias;
 
-    std::string rotulo = getRotulo(no->address, cache->capacidade);
+    std::string rotulo = getRotulo(no->address, cache->capacidade, cache->numeroVias);
     
     for (int i = 0; i < vias.size(); i++) 
     {
-        if (vias[i].rotulo == rotulo)
+        if (vias[i].rotulo == rotulo && vias[i].valid)
         {   
             char acao = 'R';
-            if (no->action == Action::WRITE && Escrita::WRITE_BACK) {
+            if (no->action == Action::WRITE && cache->escrita == Escrita::WRITE_BACK) {
                 vias[i].dirty = 1;
                 acao = 'W';
             }
