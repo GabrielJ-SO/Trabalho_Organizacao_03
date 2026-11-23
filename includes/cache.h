@@ -51,7 +51,9 @@ typedef struct Cache {
     Escrita     escrita;
     Estatistica estatisticas;
 
-    std::vector<Conjunto> conjuntos;
+    
+    std::vector<std::string> associativa;
+    std::vector<Conjunto>    conjuntos;
 } Cache;
 
 

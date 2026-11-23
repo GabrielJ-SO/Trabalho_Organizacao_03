@@ -31,6 +31,11 @@ std::string getRotulo(std::string endereco, int capacidade, int numeroVias) {
     return conversorIntHex(rotulo, 7, true);
 }
 
+std::string getRotulo(std::string endereco, int tamanhoBloco) {
+    int rotulo = conversorBinInt(endereco)/(tamanhoBloco);
+    return conversorIntHex(rotulo, 7, true);
+}
+
 std::string getOffset(std::string endereco, int tamanhoBloco) {
     return std::to_string(conversorBinInt(endereco)%tamanhoBloco);
 }
@@ -51,7 +56,34 @@ std::string reconstruirEndereco(int tag, int idx, int offset, int bitsTag, int b
     return endereco;
 }
 
-bool conflito(const std::vector<std::string>& blocosInserido, std::string tag) {
+
+void inserirAssociativa(Cache *cache, std::string endereco) {
+    std::string tag = getRotulo(endereco, cache->tamanhoBloco);
+
+    if (cache->associativa.size() >= (cache->numeroConjuntos * cache->numeroVias))
+        cache->associativa.erase(cache->associativa.begin());
+
+    cache->associativa.push_back(tag);
+}
+
+
+bool estaEmAssociativa(Cache *cache, std::string endereco) {
+    
+    std::string tag = getRotulo(endereco, cache->tamanhoBloco);
+    
+    for (int i = 0; i < cache->associativa.size(); i++) {
+
+        if (cache->associativa[i] == tag) {
+            cache->associativa.erase(cache->associativa.begin() + i);
+            cache->associativa.push_back(tag);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool acessadoAnteriormente(const std::vector<std::string>& blocosInserido, std::string tag) {
     for (int i = 0; i < blocosInserido.size(); i++) {
         if (blocosInserido[i] == tag)
             return true;
@@ -59,6 +91,7 @@ bool conflito(const std::vector<std::string>& blocosInserido, std::string tag) {
 
     return false;
 }
+
 
 bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
     std::vector<Via>& vias = cache->conjuntos[idx].vias;
@@ -90,17 +123,14 @@ bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
             int acesso              = cache->estatisticas.numeroAcessos;
 
             std::string log;
-            if (conflito(cache->conjuntos[idx].blocosInserido, vias[i].rotulo)) {
-                cache->estatisticas.conflitos += 1;
-                log = std::format("{} {} {} rot={} idx={} off={} FALTA conflito\n", acesso, acao, enderecoHex, vias[i].rotulo, idx, offset);
-            }
-            else {
-                cache->estatisticas.compulsorias += 1;
-                cache->conjuntos[idx].blocosInserido.push_back(vias[i].rotulo);
-                log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria\n", acesso, acao, enderecoHex, vias[i].rotulo, idx, offset);
-            }
+            cache->estatisticas.compulsorias += 1;
+            cache->conjuntos[idx].blocosInserido.push_back(vias[i].rotulo);
+            log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria\n", acesso, acao, enderecoHex, vias[i].rotulo, idx, offset);
             
             cache->estatisticas.logAcessos.push_back(log);
+
+            if (!estaEmAssociativa(cache, no->address))
+                inserirAssociativa(cache, no->address);
 
             return true;
         }
@@ -148,22 +178,29 @@ bool substituirPorLRU(Cache *cache, Node* no, int idx) {
     int acesso              = cache->estatisticas.numeroAcessos;
 
     std::string log;
-    if (conflito(cache->conjuntos[idx].blocosInserido, vias[lru].rotulo)) {
-        cache->estatisticas.conflitos += 1;
-        log = std::format("{} {} {} rot={} idx={} off={} FALTA conflito expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
-    }
-    else {
+    if (!acessadoAnteriormente(cache->conjuntos[idx].blocosInserido, vias[lru].rotulo) && !estaEmAssociativa(cache, no->address)) {
         cache->estatisticas.compulsorias += 1;
         cache->conjuntos[idx].blocosInserido.push_back(vias[lru].rotulo);
         log = std::format("{} {} {} rot={} idx={} off={} FALTA compulsoria expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
     }
+    else if (acessadoAnteriormente(cache->conjuntos[idx].blocosInserido, vias[lru].rotulo) && !estaEmAssociativa(cache, no->address)) {
+        cache->estatisticas.capacidade += 1;
+        log = std::format("{} {} {} rot={} idx={} off={} FALTA capacidade expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
+    }
+    else {
+        cache->estatisticas.conflitos += 1;
+        log = std::format("{} {} {} rot={} idx={} off={} FALTA conflito expulsa {} {}\n", acesso, acao, enderecoHex, vias[lru].rotulo, idx, offset, enderecoExpulso, wb);
+    }
+
+    if (!estaEmAssociativa(cache, no->address))
+        inserirAssociativa(cache, no->address);
 
     cache->estatisticas.logAcessos.push_back(log);
 
     return false;
 }
 
-void inserirConjuntoCache(Cache *cache, Node* no, int idx) {
+void inserirBlocoCache(Cache *cache, Node* no, int idx) {
     
     if (inserirEmViaLivre(cache, no, idx) == false)
         substituirPorLRU(cache, no, idx);
@@ -220,7 +257,7 @@ void acessarCache(Cache* cache, Node* no) {
 
     cache->contadorLRU += 1;
     if (!acerto(cache, no, idx))
-        inserirConjuntoCache(cache, no, idx);
+        inserirBlocoCache(cache, no, idx);
 
     freeNode(no);
 }
