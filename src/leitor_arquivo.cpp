@@ -8,13 +8,15 @@ Action getAction(std::string linha, int &pos);
 AddressQueue* lerArquivo(std::string path) {
     std::ifstream arquivo(path);
 
-    if(!arquivo) return {};
+    if(!arquivo) return nullptr;
 
     std::string linha;
     AddressQueue* queue = createQueue();
 
     while (std::getline(arquivo, linha))
     {   
+        if (linha.empty() || linha[0] == '#') continue;
+            
         int i = 0;
         int pos;
         Action action = getAction(linha, pos);
