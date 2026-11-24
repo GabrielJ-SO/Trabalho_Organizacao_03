@@ -1,5 +1,6 @@
 #include "utils.h"
 #include "cache.h"
+#include <fstream>
 #include <format>
 
 using namespace std;
@@ -58,35 +59,54 @@ Escrita entradaEscrita() {
     char opcao;
 
     do {
-        cout << "Tipo de escrita:\n < 1-Write-back >\n < 2-Write-through >\n < 0-Sair >\n  Escrita: ";
+        cout << "\t\t    _________________________" << endl;
+        cout << "\t\t    |   Tipo de escrita:    |" << endl;
+        cout << "\t\t    |   < 1.Write-back >    |" << endl;
+        cout << "\t\t    |  < 2.Write-through >  |" << endl;
+        cout << "\t\t    |      < 0.Sair >       |" << endl;
+        cout << "\t\t    |_______________________|" << endl;
+        cout << "\t\t    |Escrita: ";
         cin >> opcao;
 
+        system("cls");
         switch (opcao)
         {
             case '1':
                 return Escrita::WRITE_BACK;
             case '2':
                 return Escrita::WRITE_THROUGH;
+            case '0':
+                break;
         
             default:
                 cout << "Digite '1' ou '2' para escolher o tipo de escrita.";
                 break;
         }
 
-    } while (opcao != 0);
+    } while (opcao != '0');
 
     return Escrita::NONE;
 }
 
 bool validarEntrada(int capacidade, int tamanhoBloco, int numeroVias, Escrita politicaEscrita) {
-    if (capacidade < 0 || (tamanhoBloco < 0 || tamanhoBloco < 4) || numeroVias < 0)
+    if (capacidade < 0 || (tamanhoBloco < 0 || tamanhoBloco < 4) || numeroVias < 0) {
+        cout << "< ERRO: Capacidade, tamanho do bloco e numero de vias, devem ser positivos. >" << endl;
         return false;
-    else if ((capacidade & (capacidade - 1)) != 0 && (tamanhoBloco & (tamanhoBloco - 1)) != 0 && (numeroVias & (numeroVias - 1)) != 0)
+    }
+    else if ((capacidade & (capacidade - 1)) != 0 && (tamanhoBloco & (tamanhoBloco - 1)) != 0 && (numeroVias & (numeroVias - 1)) != 0) {
+        cout << "< ERRO: Capacidade, tamanho do bloco e numero de vias, deve ser potencias de 2 >" << endl;        
         return false;
-    else if (capacidade < (tamanhoBloco * numeroVias))
+    }
+        
+    else if (capacidade < (tamanhoBloco * numeroVias)) {
+        cout << "< ERRO: A capacidade nao pode ser menor do que o tamanho do bloco vezes numero de vias >" << endl;    
         return false;
-    else if (politicaEscrita == Escrita::NONE)
-        return false;
+
+    }
+    else if (politicaEscrita == Escrita::NONE) {
+        cout << "< ERRO: Deve ser escolhido uma politica de escrita >" << endl;
+        return false; 
+    }
     
 
     return true;
@@ -110,45 +130,69 @@ Cache* iniciarCache() {
         return NULL;
 }
 
-void gerarEstatisticas(Cache* cache) {
-    cout << endl;
+bool gerarOutputExperimentos() {
+    ofstream output("experimentos.txt");
 
-    cout << " CONFIGURACAO   capacidade=" << cache->capacidade << " B " << " bloco=" << cache->tamanhoBloco << " B " << " vias=" << cache->numeroVias << " conjuntos=" << cache->numeroConjuntos << " escrita=" << ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT") << endl;
-    cout << " CAMPOS         rotulo=" << cache->bitsTag << " bits " << "  indice=" << cache->bitsIdx << " bits " << "  offset=" << cache->bitsOffset << " bits " << endl;
-    
+    if (!output) return false;
+
+    for (int i = 0; i < experimentos.size(); i++)
+        output << experimentos[i];
+
+    output.close();
+
+    return true;
+}
+
+void gerarEstatisticas(Cache* cache, string path) {
     cout << endl;
-    for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++)
-        cout << cache->estatisticas.logAcessos[i] << endl;
+    contagemExperimentos += 1;
     
     calcularTaxaAcertos(cache);
     descargaFinal(cache);
+    
+    string saida = format("====================== (Experimento {} - {}) =============================\n\n", contagemExperimentos, path);
+    saida += format(" CONFIGURACAO   capacidade={}   bloco={} B   vias={}   conjuntos={}   escrita={}\n", cache->capacidade, cache->tamanhoBloco, cache->numeroVias, cache->numeroConjuntos, ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT"));
+    saida += format(" CAMPOS         rotulo={} bits   indice={} bits   offset={} bits\n", cache->bitsTag, cache->bitsIdx, cache->bitsOffset);
+    
+    saida += "\n";
+    for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++)
+        saida += cache->estatisticas.logAcessos[i];
 
-    cout << endl << endl;
-    cout << "acessos ............. " << cache->estatisticas.numeroAcessos << endl;
-    cout << "acertos ............. " << cache->estatisticas.acertos << endl;
-    cout << "faltas .............. " << cache->estatisticas.faltas << " (compulsorias " << cache->estatisticas.compulsorias << ", conflito " << cache->estatisticas.conflitos << ", capacidade " << cache->estatisticas.capacidade << ")" << endl;
-    cout << "taxa de acerto ...... " << cache->estatisticas.taxaAcertos << "%" << endl;
-    cout << "blocos lidos da mem.  " << cache->estatisticas.blocosLidos << " (" << (cache->estatisticas.blocosLidos * cache->tamanhoBloco) << " B)" << endl;
+    saida += "\n\n";
 
+    saida += format("acessos ............. {}\n", cache->estatisticas.numeroAcessos);
+    saida += format("acertos ............. {}\n", cache->estatisticas.acertos);
+    saida += format("faltas .............. {} (compulsorias {}, conflito {}, capacidade {})\n", cache->estatisticas.faltas, cache->estatisticas.compulsorias, cache->estatisticas.conflitos, cache->estatisticas.capacidade);
+    saida += format("taxa de acerto ...... {}%\n", cache->estatisticas.taxaAcertos);
+    saida += format("blocos lidos da mem.  {} ({} B)\n", cache->estatisticas.blocosLidos, (cache->estatisticas.blocosLidos * cache->tamanhoBloco));
+    
     int bytesEscrito = ((cache->escrita == Escrita::WRITE_BACK) ?
         cache->estatisticas.escritasMemoria * cache->tamanhoBloco : cache->estatisticas.escritasMemoria * 4);
-    cout << "escritas na memoria   " << cache->estatisticas.escritasMemoria << " (" << bytesEscrito << " B) ";
+
+    saida += format("escritas na memoria   {} ({} B)", cache->estatisticas.escritasMemoria, bytesEscrito);
 
     if (cache->escrita == Escrita::WRITE_BACK)
-        cout << "[writebacks " << cache->estatisticas.wb << " + descarga final " << cache->estatisticas.descargaFinal << "] " << endl;
+        saida += format( "[writebacks {} + descarga final {}]", cache->estatisticas.wb, cache->estatisticas.descargaFinal);
 
-    cout << endl;
+    saida += format("\n===================================================================================================\n\n");
+
+    experimentos.push_back(saida);
 }
 
 bool simularCache() {
 
     string inputPath;
 
-    cout << "Digite o nome do arquivo (com extensao)." << endl;
+    cout << "Digite o nome do arquivo (com extensao): ";
     cin >> inputPath;
 
     AddressQueue* queue = lerArquivo(inputPath);
     Cache* cache = iniciarCache();
+
+    if (queue == nullptr) {
+        cout << "< ERRO: Nao foi possivel ler o arquivo >" << endl;
+        return false;
+    }
 
     if (cache == NULL) return false;
 
@@ -156,8 +200,9 @@ bool simularCache() {
     for (int i = 0; i < tamanho; i++)
         acessarCache(cache, dequeue(queue));     
 
-    gerarEstatisticas(cache);
+    gerarEstatisticas(cache, inputPath);
 
+    freeQueue(queue);
     liberarCache(cache);
     return true;
 }
@@ -166,22 +211,34 @@ void menu() {
     char opcao;
     do
     {
-        cout << "\t+---------------------+" << endl;
-        cout << "\t|         Menu        |" << endl;
-        cout << "\t| < 1.Simular Cache > |" << endl;
-        cout << "\t|     < 0.sair >      |" << endl;
-        cout << "\t+---------------------+" << endl;
-        cout << "Escolha uma opcao: ";
+        cout << "\t\t+-------------------------------+" << endl;
+        cout << "\t\t|              MENU             |" << endl;
+        cout << "\t\t|                               |" << endl;
+        cout << "\t\t|      < 1.Simular Cache >      |" << endl;
+        cout << "\t\t|                               |" << endl;
+        cout << "\t\t|       < 2.Gerar Saida >       |" << endl;
+        cout << "\t\t|                               |" << endl;
+        cout << "\t\t|          < 0.sair >           |" << endl;
+        cout << "\t\t|                               |" << endl;
+        cout << "\t\t+-------------------------------+" << endl;
+        cout << "\t\t|Escolha uma opcao: ";
         cin >> opcao;
 
+        system("cls");
         switch (opcao)
         {
         case '1':
             if(simularCache())
-                cout << "Simulacao concluida." << endl;
+                cout << "\t\t     Simulacao concluida. :)" << endl;
             else
-                cout << "Erro ao realizar simulacao" << endl;
+                cout << endl << "\t\t Falha ao realizar simulacao :(" << endl;
             break;
+        
+        case '2':
+            if (gerarOutputExperimentos())
+                cout << "\t     Output de experimentos gerado com sucesso!" << endl;
+            else
+                cout << "\t\t   Falha ao gerar saida." << endl;
         
         case '0': break;
         

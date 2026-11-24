@@ -9,4 +9,7 @@ std::string conversorBinHex(std::string bin, int preencher = 0, bool prefixo = f
 std::string conversorIntHex(int numero, int preencher = 0, bool prefixo = false);
 int conversorBinInt(std::string bin);
 
+static int contagemExperimentos = 0;
+inline std::vector<std::string> experimentos;
+ 
 void menu();
