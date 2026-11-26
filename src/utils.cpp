@@ -79,7 +79,7 @@ Escrita entradaEscrita() {
                 break;
         
             default:
-                cout << "Digite '1' ou '2' para escolher o tipo de escrita.";
+                cout << "Digite '1' ou '2' para escolher o tipo de escrita." << endl;
                 break;
         }
 
@@ -90,7 +90,7 @@ Escrita entradaEscrita() {
 
 bool validarEntrada(int capacidade, int tamanhoBloco, int numeroVias, Escrita politicaEscrita) {
     if (capacidade < 0 || (tamanhoBloco < 0 || tamanhoBloco < 4) || numeroVias < 0) {
-        cout << "< ERRO: Capacidade, tamanho do bloco e numero de vias, devem ser positivos. >" << endl;
+        cout << "< ERRO: Capacidade, tamanho do bloco e numero de vias, devem ser numeros maior que zero. >" << endl;
         return false;
     }
     else if ((capacidade & (capacidade - 1)) != 0 && (tamanhoBloco & (tamanhoBloco - 1)) != 0 && (numeroVias & (numeroVias - 1)) != 0) {
@@ -112,15 +112,24 @@ bool validarEntrada(int capacidade, int tamanhoBloco, int numeroVias, Escrita po
     return true;
 }
 
+int lerInt(std::string rotulo) {
+    int numero;
+    
+    cout << rotulo;
+    if (!(cin >> numero)) {
+        cin.clear();
+        cin.ignore();
+    }
+
+    return numero;
+}
+
 Cache* iniciarCache() {
     int capacidade, tamanhoBloco, numeroVias;
     
-    cout << "Capacidade da cache (bytes): ";    
-    cin >> capacidade;
-    cout << "Tamanho do bloco (bytes): ";
-    cin >> tamanhoBloco;
-    cout << "Numero de vias: ";
-    cin >> numeroVias;
+    capacidade   = lerInt("Capacidade da cache (bytes): ");
+    tamanhoBloco = lerInt("Tamanho do bloco (bytes): ");
+    numeroVias   = lerInt("Numero de vias: ");    
 
     Escrita politicaEscrita = entradaEscrita();
 
@@ -146,35 +155,35 @@ bool gerarOutputExperimentos() {
 void gerarEstatisticas(Cache* cache, string path) {
     cout << endl;
     contagemExperimentos += 1;
-    
+
     calcularTaxaAcertos(cache);
     descargaFinal(cache);
     
-    string saida = format("====================== (Experimento {} - {}) =============================\n\n", contagemExperimentos, path);
-    saida += format(" CONFIGURACAO   capacidade={}   bloco={} B   vias={}   conjuntos={}   escrita={}\n", cache->capacidade, cache->tamanhoBloco, cache->numeroVias, cache->numeroConjuntos, ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT"));
-    saida += format(" CAMPOS         rotulo={} bits   indice={} bits   offset={} bits\n", cache->bitsTag, cache->bitsIdx, cache->bitsOffset);
+    string saida = format("+====================== (Experimento {} - {}) =============================\n|\n", contagemExperimentos, path);
+    saida += format("| CONFIGURACAO   capacidade={}   bloco={} B   vias={}   conjuntos={}   escrita={}\n", cache->capacidade, cache->tamanhoBloco, cache->numeroVias, cache->numeroConjuntos, ((cache->escrita == Escrita::WRITE_BACK) ? "WB" : "WT"));
+    saida += format("| CAMPOS         rotulo={} bits   indice={} bits   offset={} bits\n", cache->bitsTag, cache->bitsIdx, cache->bitsOffset);
     
-    saida += "\n";
+    saida += "|\n";
     for (int i = 0; i < cache->estatisticas.logAcessos.size(); i++)
-        saida += cache->estatisticas.logAcessos[i];
+        saida += format("|{}", cache->estatisticas.logAcessos[i]);
 
-    saida += "\n\n";
+    saida += "|\n|\n";
 
-    saida += format("acessos ............. {}\n", cache->estatisticas.numeroAcessos);
-    saida += format("acertos ............. {}\n", cache->estatisticas.acertos);
-    saida += format("faltas .............. {} (compulsorias {}, conflito {}, capacidade {})\n", cache->estatisticas.faltas, cache->estatisticas.compulsorias, cache->estatisticas.conflitos, cache->estatisticas.capacidade);
-    saida += format("taxa de acerto ...... {}%\n", cache->estatisticas.taxaAcertos);
-    saida += format("blocos lidos da mem.  {} ({} B)\n", cache->estatisticas.blocosLidos, (cache->estatisticas.blocosLidos * cache->tamanhoBloco));
+    saida += format("|acessos ............. {}\n", cache->estatisticas.numeroAcessos);
+    saida += format("|acertos ............. {}\n", cache->estatisticas.acertos);
+    saida += format("|faltas .............. {} (compulsorias {}, conflito {}, capacidade {})\n", cache->estatisticas.faltas, cache->estatisticas.compulsorias, cache->estatisticas.conflitos, cache->estatisticas.capacidade);
+    saida += format("|taxa de acerto ...... {}%\n", cache->estatisticas.taxaAcertos);
+    saida += format("|blocos lidos da mem.  {} ({} B)\n", cache->estatisticas.blocosLidos, (cache->estatisticas.blocosLidos * cache->tamanhoBloco));
     
     int bytesEscrito = ((cache->escrita == Escrita::WRITE_BACK) ?
         cache->estatisticas.escritasMemoria * cache->tamanhoBloco : cache->estatisticas.escritasMemoria * 4);
 
-    saida += format("escritas na memoria   {} ({} B)", cache->estatisticas.escritasMemoria, bytesEscrito);
+    saida += format("|escritas na memoria   {} ({} B)", cache->estatisticas.escritasMemoria, bytesEscrito);
 
     if (cache->escrita == Escrita::WRITE_BACK)
         saida += format( "[writebacks {} + descarga final {}]", cache->estatisticas.wb, cache->estatisticas.descargaFinal);
 
-    saida += format("\n===================================================================================================\n\n");
+    saida += format("\n+=======================================================================================================\n\n");
 
     experimentos.push_back(saida);
 }
@@ -243,9 +252,11 @@ void menu() {
         case '0': break;
         
         default:
-            cout << "Opcao Invalida.";
+            cout << "Opcao Invalida." << endl;
             break;
         }
+
+        cin.ignore();
 
     } while (opcao != '0');
     

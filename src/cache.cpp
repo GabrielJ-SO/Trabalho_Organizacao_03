@@ -25,7 +25,6 @@ Cache* criarCache(int capacidade, int tamanhoBloco, int numeroVias, Escrita escr
     return cache;
 }
 
-
 std::string getRotulo(std::string endereco, int capacidade, int numeroVias) {
     int rotulo = conversorBinInt(endereco)/(capacidade/numeroVias);
     return conversorIntHex(rotulo, 7, true);
@@ -56,7 +55,6 @@ std::string reconstruirEndereco(int tag, int idx, int offset, int bitsTag, int b
     return endereco;
 }
 
-
 void inserirAssociativa(Cache *cache, std::string endereco) {
     std::string tag = getRotulo(endereco, cache->tamanhoBloco);
 
@@ -65,7 +63,6 @@ void inserirAssociativa(Cache *cache, std::string endereco) {
 
     cache->associativa.push_back(tag);
 }
-
 
 bool estaEmAssociativa(Cache *cache, std::string endereco) {
     
@@ -91,7 +88,6 @@ bool acessadoAnteriormente(const std::vector<std::string>& blocosInserido, std::
 
     return false;
 }
-
 
 bool inserirEmViaLivre(Cache *cache, Node* no, int idx) {
     std::vector<Via>& vias = cache->conjuntos[idx].vias;
